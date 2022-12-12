@@ -39,7 +39,7 @@ fn parse_any<T: FromStr>(str: &str) -> Option<T> {
 
 impl Monkey {
     pub fn new(str: &str) -> Self {
-        let mut iter = str.split('\n').skip(1);
+        let mut iter = str.lines().skip(1);
         Self {
             items: iter.next().and_then(parse_items).expect("invalid items"),
             op: iter.next().and_then(parse_op).expect("invalid op"),
