@@ -55,7 +55,7 @@ impl Grid {
         if reverse {
             self.elevations[p.0][p.1] == b'a'
         } else {
-            !reverse && p == self.end
+            p == self.end
         }
     }
 
