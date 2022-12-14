@@ -1,11 +1,15 @@
-use itertools::Itertools;
-use nom::combinator::all_consuming;
-use nom::{
-    branch::alt, bytes::complete::tag, character::complete::u8, combinator::map, error::Error,
-    multi::separated_list0, sequence::delimited, Finish, IResult,
-};
 use std::cmp::Ordering;
 use std::str::FromStr;
+
+use itertools::Itertools;
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use nom::character::complete::u8;
+use nom::combinator::{all_consuming, map};
+use nom::error::Error;
+use nom::multi::separated_list0;
+use nom::sequence::delimited;
+use nom::{Finish, IResult};
 
 use super::get_input;
 
