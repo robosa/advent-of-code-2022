@@ -1,23 +1,15 @@
+use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
 
-use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    bytes::complete::take,
-    character::complete::u32,
-    combinator::{all_consuming, map},
-    multi::separated_list1,
-    sequence::tuple,
-    IResult,
-};
+use nom::branch::alt;
+use nom::bytes::complete::{tag, take};
+use nom::character::complete::u32;
+use nom::combinator::{all_consuming, map};
+use nom::multi::separated_list1;
+use nom::sequence::tuple;
+use nom::IResult;
 
 use super::get_input;
-
-#[derive(Debug)]
-struct Cave {
-    flow: u32,
-    tunnels: Vec<usize>,
-}
 
 fn parse_id(input: &str) -> IResult<&str, String> {
     map(take(2usize), |s: &str| s.to_string())(input)
@@ -40,53 +32,9 @@ fn parse_cave(input: &str) -> IResult<&str, (String, u32, Vec<String>)> {
     )(input)
 }
 
-fn test_paths(
-    paths: &[Vec<u32>],
-    curr_idx: usize,
-    curr_flow: u32,
-    remaining: HashSet<(usize, u32)>,
-    time: u32,
-) -> Vec<(u32, HashSet<(usize, u32)>)> {
-    let mut result = vec![(curr_flow, remaining.clone())];
-    for (i, flow) in remaining.clone() {
-        let cost = paths[curr_idx][i];
-        if time > cost + 1 {
-            let new_time = time - cost - 1;
-            let mut remaining = remaining.clone();
-            remaining.remove(&(i, flow));
-            result.append(&mut test_paths(
-                paths,
-                i,
-                curr_flow + new_time * flow,
-                remaining,
-                new_time,
-            ));
-        }
-    }
-    result
-}
-
-fn mat_mult(left: &[Vec<u32>], right: &[Vec<u32>]) -> Vec<Vec<u32>> {
-    let n = left.len();
-    let mut res = vec![vec![0; n]; n];
-    for i in 0..n {
-        for j in 0..n {
-            for (k, right) in right.iter().enumerate() {
-                res[i][j] += left[i][k] * right[j];
-            }
-        }
-    }
-    res
-}
-
-fn build_shortest_paths(caves: &[Cave]) -> Vec<Vec<u32>> {
-    let n = caves.len();
-    let mut adj_mat = vec![vec![0; n]; n];
-    for i in 0..n {
-        for j in &caves[i].tunnels {
-            adj_mat[i][*j] = 1;
-        }
-    }
+fn build_shortest_paths(adj_mat: &[Vec<u32>]) -> Vec<Vec<u32>> {
+    let n = adj_mat.len();
+    let mut adj_pow_mat = adj_mat.to_vec();
     let mut shortest_mat = vec![vec![u32::MAX; n]; n];
     for i in 0..n {
         shortest_mat[i][i] = 0;
@@ -96,18 +44,48 @@ fn build_shortest_paths(caves: &[Cave]) -> Vec<Vec<u32>> {
             }
         }
     }
-    let mut pow_mat = adj_mat.clone();
-    for k in 2..30 {
-        pow_mat = mat_mult(&pow_mat, &adj_mat);
+    for p in 2..30 {
+        let mut temp_mat = vec![vec![0; n]; n];
         for i in 0..n {
             for j in 0..n {
-                if pow_mat[i][j] != 0 && k < shortest_mat[i][j] {
-                    shortest_mat[i][j] = k;
+                for (k, right) in adj_mat.iter().enumerate() {
+                    temp_mat[i][j] += adj_pow_mat[i][k] * right[j];
+                }
+                if temp_mat[i][j] != 0 && p < shortest_mat[i][j] {
+                    shortest_mat[i][j] = p;
                 }
             }
         }
+        adj_pow_mat = temp_mat;
     }
     shortest_mat
+}
+
+fn check_all_paths(
+    caves: &[(usize, u32)],
+    paths: &[Vec<u32>],
+    curr_idx: usize,
+    curr_flow: u32,
+    visited: HashSet<usize>,
+    time: u32,
+) -> Vec<(u32, HashSet<usize>)> {
+    let mut result = vec![(curr_flow, visited.clone())];
+    for (i, flow) in caves {
+        let cost = paths[curr_idx][*i];
+        let mut visited = visited.clone();
+        if time > cost + 1 && visited.insert(*i) {
+            let new_time = time - cost - 1;
+            result.append(&mut check_all_paths(
+                caves,
+                paths,
+                *i,
+                curr_flow + new_time * flow,
+                visited,
+                new_time,
+            ));
+        }
+    }
+    result
 }
 
 pub fn day16(step: u8) -> u32 {
@@ -119,37 +97,36 @@ pub fn day16(step: u8) -> u32 {
         .flat_map(parse_cave)
         .enumerate()
         .map(|(i, (_, (id, flow, tunnels)))| {
-            indexes.insert(id.clone(), i);
-            (id, flow, tunnels)
+            indexes.insert(id, i);
+            (i, flow, tunnels)
         })
         .collect::<Vec<_>>();
-    for (_, flow, tunnels) in cave_data {
-        let tunnels = tunnels
-            .iter()
-            .map(|s| indexes.get(s).unwrap())
-            .copied()
-            .collect();
-        caves.push(Cave { flow, tunnels })
+    let mut adj_mat = vec![vec![0; cave_data.len()]; cave_data.len()];
+    for (i, flow, tunnels) in cave_data {
+        for j in tunnels.iter().map(|s| indexes.get(s).unwrap()) {
+            adj_mat[i][*j] = 1;
+        }
+        if flow > 0 {
+            caves.push((i, flow));
+        }
     }
-    let n = caves.len();
-    let paths = build_shortest_paths(&caves);
-    let caves_with_flow = (0..n)
-        .filter(|&i| caves[i].flow > 0)
-        .map(|i| (i, caves[i].flow))
-        .collect::<HashSet<_>>();
+    let paths = build_shortest_paths(&adj_mat);
     let start = indexes.get("AA").unwrap();
+    let time = if step == 1 { 30 } else { 26 };
 
-    let mut max_flow = 0;
+    let mut result = check_all_paths(&caves, &paths, *start, 0, HashSet::new(), time);
     if step == 1 {
-        for (flow, _) in test_paths(&paths, *start, 0, caves_with_flow, 30) {
-            max_flow = max_flow.max(flow);
-        }
+        result.iter().max_by_key(|(flow, _)| *flow).unwrap().0
     } else {
-        for (flow1, other) in test_paths(&paths, *start, 0, caves_with_flow, 26) {
-            for (flow2, _) in test_paths(&paths, *start, 0, other, 26) {
-                max_flow = max_flow.max(flow1 + flow2)
-            }
+        let mut max_flow = 0;
+        result.sort_unstable_by_key(|(flow, _)| Reverse(*flow));
+        for (i, (flow1, visited1)) in result[..result.len() - 1].iter().enumerate() {
+            let (flow2, _) = result[i + 1..]
+                .iter()
+                .find(|(_, visited2)| visited1.is_disjoint(visited2))
+                .unwrap();
+            max_flow = max_flow.max(flow1 + flow2);
         }
+        max_flow
     }
-    max_flow
 }
