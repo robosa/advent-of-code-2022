@@ -32,24 +32,25 @@ fn parse_cave(input: &str) -> IResult<&str, (String, u32, Vec<String>)> {
     )(input)
 }
 
-fn build_shortest_paths(adj_mat: &[Vec<u32>]) -> Vec<Vec<u32>> {
+fn build_shortest_paths(adj_mat: &[Vec<u8>]) -> Vec<Vec<u32>> {
     let n = adj_mat.len();
-    let mut adj_pow_mat = adj_mat.to_vec();
+    let mut adj_pow_mat = vec![vec![0; n]; n];
     let mut shortest_mat = vec![vec![u32::MAX; n]; n];
     for i in 0..n {
         shortest_mat[i][i] = 0;
         for j in 0..n {
             if adj_mat[i][j] == 1 {
+                adj_pow_mat[i][j] = 1;
                 shortest_mat[i][j] = 1;
             }
         }
     }
-    for p in 2..30 {
+    for p in 2..29 {
         let mut temp_mat = vec![vec![0; n]; n];
         for i in 0..n {
             for j in 0..n {
-                for (k, right) in adj_mat.iter().enumerate() {
-                    temp_mat[i][j] += adj_pow_mat[i][k] * right[j];
+                for (k, line) in adj_mat.iter().enumerate() {
+                    temp_mat[i][j] += adj_pow_mat[i][k] * line[j] as u64;
                 }
                 if temp_mat[i][j] != 0 && p < shortest_mat[i][j] {
                     shortest_mat[i][j] = p;
