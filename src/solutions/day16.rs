@@ -32,32 +32,26 @@ fn parse_cave(input: &str) -> IResult<&str, (String, u32, Vec<String>)> {
     )(input)
 }
 
-fn build_shortest_paths(adj_mat: &[Vec<u8>]) -> Vec<Vec<u32>> {
-    let n = adj_mat.len();
-    let mut adj_pow_mat = vec![vec![0; n]; n];
+fn build_shortest_paths(adj_list: &[Vec<usize>]) -> Vec<Vec<u32>> {
+    let n = adj_list.len();
     let mut shortest_mat = vec![vec![u32::MAX; n]; n];
     for i in 0..n {
         shortest_mat[i][i] = 0;
-        for j in 0..n {
-            if adj_mat[i][j] == 1 {
-                adj_pow_mat[i][j] = 1;
-                shortest_mat[i][j] = 1;
-            }
+        for j in adj_list[i].iter() {
+            shortest_mat[i][*j] = 1;
         }
     }
-    for p in 2..29 {
-        let mut temp_mat = vec![vec![0; n]; n];
+    for k in 0..n {
         for i in 0..n {
             for j in 0..n {
-                for (k, line) in adj_mat.iter().enumerate() {
-                    temp_mat[i][j] += adj_pow_mat[i][k] * line[j] as u64;
-                }
-                if temp_mat[i][j] != 0 && p < shortest_mat[i][j] {
-                    shortest_mat[i][j] = p;
+                if shortest_mat[i][k] < u32::MAX
+                    && shortest_mat[k][j] < u32::MAX
+                    && shortest_mat[i][j] > shortest_mat[i][k] + shortest_mat[k][j]
+                {
+                    shortest_mat[i][j] = shortest_mat[i][k] + shortest_mat[k][j];
                 }
             }
         }
-        adj_pow_mat = temp_mat;
     }
     shortest_mat
 }
@@ -93,6 +87,7 @@ pub fn day16(step: u8) -> u32 {
     let input = get_input("input/day16.txt");
     let mut indexes = HashMap::new();
     let mut caves = Vec::new();
+    let mut adj_list = Vec::new();
     let cave_data = input
         .lines()
         .flat_map(parse_cave)
@@ -102,16 +97,13 @@ pub fn day16(step: u8) -> u32 {
             (i, flow, tunnels)
         })
         .collect::<Vec<_>>();
-    let mut adj_mat = vec![vec![0; cave_data.len()]; cave_data.len()];
     for (i, flow, tunnels) in cave_data {
-        for j in tunnels.iter().map(|s| indexes.get(s).unwrap()) {
-            adj_mat[i][*j] = 1;
-        }
+        adj_list.push(tunnels.iter().map(|s| *indexes.get(s).unwrap()).collect());
         if flow > 0 {
             caves.push((i, flow));
         }
     }
-    let paths = build_shortest_paths(&adj_mat);
+    let paths = build_shortest_paths(&adj_list);
     let start = indexes.get("AA").unwrap();
     let time = if step == 1 { 30 } else { 26 };
 
