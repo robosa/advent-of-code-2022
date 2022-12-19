@@ -33,7 +33,7 @@ fn main() {
         16 => println!("{}", day16(args.step)),
         17 => println!("{}", day17(args.step)),
         18 => println!("{}", day18(args.step)),
-        // 19 => println!("{}", day19(args.step)),
+        19 => println!("{}", day19(args.step)),
         // 20 => println!("{}", day20(args.step)),
         // 21 => println!("{}", day21(args.step)),
         // 22 => println!("{}", day22(args.step)),
