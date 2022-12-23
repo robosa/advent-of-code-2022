@@ -2,18 +2,6 @@ use std::collections::HashSet;
 
 use super::get_input;
 
-struct Elf {
-    pos: (i32, i32),
-    n: bool,
-    s: bool,
-    w: bool,
-    e: bool,
-    ne: bool,
-    nw: bool,
-    se: bool,
-    sw: bool,
-}
-
 #[derive(Clone, Copy)]
 enum Dir {
     North,
@@ -33,11 +21,23 @@ impl Dir {
     }
 }
 
+struct Elf {
+    p: (i32, i32),
+    n: bool,
+    s: bool,
+    w: bool,
+    e: bool,
+    ne: bool,
+    nw: bool,
+    se: bool,
+    sw: bool,
+}
+
 impl Elf {
-    fn new(elves: &HashSet<(i32, i32)>, pos: (i32, i32)) -> Self {
-        let (x, y) = pos;
+    fn new(elves: &HashSet<(i32, i32)>, p: (i32, i32)) -> Self {
+        let (x, y) = p;
         Self {
-            pos,
+            p,
             n: elves.contains(&(x, y - 1)),
             s: elves.contains(&(x, y + 1)),
             w: elves.contains(&(x - 1, y)),
@@ -64,7 +64,7 @@ impl Elf {
 
     fn check_north(&self, to_check: u8) -> Option<(i32, i32)> {
         if !self.n && !self.nw && !self.ne {
-            Some((self.pos.0, self.pos.1 - 1))
+            Some((self.p.0, self.p.1 - 1))
         } else if to_check > 1 {
             self.check_south(to_check - 1)
         } else {
@@ -74,7 +74,7 @@ impl Elf {
 
     fn check_south(&self, to_check: u8) -> Option<(i32, i32)> {
         if !self.s && !self.sw && !self.se {
-            Some((self.pos.0, self.pos.1 + 1))
+            Some((self.p.0, self.p.1 + 1))
         } else if to_check > 1 {
             self.check_west(to_check - 1)
         } else {
@@ -84,7 +84,7 @@ impl Elf {
 
     fn check_west(&self, to_check: u8) -> Option<(i32, i32)> {
         if !self.w && !self.nw && !self.sw {
-            Some((self.pos.0 - 1, self.pos.1))
+            Some((self.p.0 - 1, self.p.1))
         } else if to_check > 1 {
             self.check_east(to_check - 1)
         } else {
@@ -94,7 +94,7 @@ impl Elf {
 
     fn check_east(&self, to_check: u8) -> Option<(i32, i32)> {
         if !self.e && !self.ne && !self.se {
-            Some((self.pos.0 + 1, self.pos.1))
+            Some((self.p.0 + 1, self.p.1))
         } else if to_check > 1 {
             self.check_north(to_check - 1)
         } else {
@@ -107,17 +107,17 @@ fn turn(elves: &HashSet<(i32, i32)>, dir: Dir) -> HashSet<(i32, i32)> {
     let mut proposals = Vec::new();
     let mut new_pos = HashSet::new();
     let mut forbidden = HashSet::new();
-    for &(x, y) in elves.iter() {
-        let elf = Elf::new(elves, (x, y));
+    for &p in elves.iter() {
+        let elf = Elf::new(elves, p);
         if elf.is_idle() {
-            proposals.push(((x, y), (x, y)));
-        } else if let Some((nx, ny)) = elf.check_dir(dir) {
-            proposals.push(((x, y), (nx, ny)));
-            if !new_pos.insert((nx, ny)) {
-                forbidden.insert((nx, ny));
+            proposals.push((p, p));
+        } else if let Some(np) = elf.check_dir(dir) {
+            proposals.push((p, np));
+            if !new_pos.insert(np) {
+                forbidden.insert(np);
             }
         } else {
-            proposals.push(((x, y), (x, y)));
+            proposals.push((p, p));
         }
     }
     proposals
@@ -162,6 +162,6 @@ pub fn day23(step: u8) -> usize {
             elves = new_elves;
             dir = dir.next();
         }
-        0
+        unreachable!()
     }
 }
