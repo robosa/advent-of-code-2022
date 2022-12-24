@@ -21,7 +21,7 @@ mod day20;
 mod day21;
 mod day22;
 mod day23;
-// mod day24;
+mod day24;
 // mod day25;
 
 pub use day01::day01;
@@ -47,7 +47,7 @@ pub use day20::day20;
 pub use day21::day21;
 pub use day22::day22;
 pub use day23::day23;
-// pub use day24::day24;
+pub use day24::day24;
 // pub use day25::day25;
 
 use std::fs::read_to_string;
