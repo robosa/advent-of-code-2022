@@ -4,7 +4,6 @@ use nom::{branch::alt, combinator::map, multi::many1, IResult};
 
 use super::get_input;
 
-#[derive(Debug)]
 enum Command {
     Move(u32),
     TurnLeft,

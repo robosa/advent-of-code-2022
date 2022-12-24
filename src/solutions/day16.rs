@@ -90,13 +90,13 @@ pub fn day16(step: u8) -> u32 {
         })
         .collect::<Vec<_>>();
     for (i, flow, tunnels) in data {
-        adj_list.push(tunnels.iter().filter_map(|s| idx.get(s).copied()).collect());
+        adj_list.push(tunnels.iter().map(|s| idx[s]).collect());
         if flow > 0 {
             caves.push((i, flow));
         }
     }
     let paths = shortest_paths(&adj_list);
-    let start = idx.get("AA").copied().unwrap();
+    let start = idx["AA"];
     let time = if step == 1 { 30 } else { 26 };
 
     let mut result = check_all_paths(&caves, &paths, start, 0, HashSet::new(), time);

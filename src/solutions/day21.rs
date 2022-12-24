@@ -48,8 +48,7 @@ fn find_human_path(monkeys: &HashMap<String, Monkey>, name: &str) -> Option<Vec<
 }
 
 fn calc(monkeys: &HashMap<String, Monkey>, name: &str) -> i64 {
-    let monkey = monkeys.get(name).unwrap();
-    match monkey {
+    match &monkeys[name] {
         Monkey::Num(i) => *i,
         Monkey::Op((Op::Add, s1, s2)) => calc(monkeys, s1) + calc(monkeys, s2),
         Monkey::Op((Op::Sub, s1, s2)) => calc(monkeys, s1) - calc(monkeys, s2),
@@ -67,9 +66,9 @@ fn solve(
     if name == "humn" {
         return equal_to;
     };
-    let (op, left, right) = match monkeys.get(name).unwrap() {
+    let (op, left, right) = match &monkeys[name] {
         Monkey::Op((op, s1, s2)) => (op, s1, s2),
-        Monkey::Num(_) => unreachable!(),
+        _ => unreachable!(),
     };
     let is_human_left = left == &human_path.pop().unwrap();
     let (to_solve, other) = if is_human_left {
@@ -98,8 +97,8 @@ pub fn day21(step: u8) -> i64 {
     } else {
         let mut human_path = find_human_path(&monkeys, "root").unwrap();
         human_path.pop();
-        let (left, right) = match monkeys.get("root") {
-            Some(Monkey::Op((_, s1, s2))) => (s1, s2),
+        let (left, right) = match &monkeys["root"] {
+            Monkey::Op((_, s1, s2)) => (s1, s2),
             _ => panic!(),
         };
         if left == &human_path.pop().unwrap() {
